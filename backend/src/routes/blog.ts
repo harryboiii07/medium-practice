@@ -22,8 +22,7 @@ blogRouter.use('/*', async (c, next) => {
       error : "authorization failed"
     });
   }
-  const token = header.split(" ")[1];
-  const response = await verify(token,c.env.JWT_SECRET);
+  const response = await verify(header,c.env.JWT_SECRET);
   if(!response){
     c.status(403);
     c.json({
@@ -117,7 +116,18 @@ blogRouter.get("/bulk", async (c) => {
 		datasourceUrl: c.env.DATABASE_URL	,
 	}).$extends(withAccelerate()); 
 
-  const posts = await prisma.post.findMany({});
+  const posts = await prisma.post.findMany({
+    select: {
+      title : true,
+      content : true,
+      id : true,
+      author : {
+        select: {
+          name : true
+        }
+      }
+    }
+  });
 
   return c.json({
     posts : posts
@@ -129,12 +139,22 @@ blogRouter.get('/:id', async (c) => {
 		datasourceUrl: c.env.DATABASE_URL	,
 	}).$extends(withAccelerate()); 
 
-  const body = await c.req.json();
   const id = c.req.param('id');
+  
   try{
     const post = await prisma.post.findFirst({
       where : {
         id : id
+      },
+      select : {
+        id : true,
+        title : true,
+        content : true,
+        author : {
+          select : {
+            name : true
+          }
+        }
       }
     })
 
